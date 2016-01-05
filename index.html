@@ -1,0 +1,318 @@
+<html>
+
+<head>
+    <title>Asset DCIM</title>
+    <script src="js/jquery.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <script src="js/jquery.dataTables.js"></script>
+    <link rel="stylesheet" href="css/bootstrap.css" />
+    <link rel="stylesheet" href="css/dataTables.bootstrap.css" />
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h4>Infra Asset Configurator instance</h4>
+                </div>
+                <div class="panel-body">
+                    <table class="table table-hover able-condensed" id="tblInstance">
+                        <thead>
+                            <tr>
+                                <th class="hidden">Row Id</th>
+                                <th>Operation</th>
+                                <th>Asset Instance Name</th>
+                                <th>Maximo Asset Id</th>
+                                <th>Maximo Asset Num</th>
+                                <th>Maximo Site Id</th>
+                                <th>SerialNum</th>
+                                <th>Description</th>
+                                <th>Vendor</th>
+                                <th>Manufacturer</th>
+                                <th>Asset Visible to Customer?</th>
+                                <th>IBX</th>
+                                <th>Protocol</th>
+                                <th>Scan Frequency (in sec)</th>
+                                <th>Edit</th>
+                                <th>Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <button class="btn btn-primary" id="btnCreateAsset">
+                        Create Asset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="editForm" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">
+                        <span id="modalTitle"></span>
+                    </h4>
+                    <input type="hidden" id="rid" />
+                </div>
+                <div class="modal-body" style="max-height: 500px; overflow-y:auto;">
+                    <form id="frm">
+                        <input type="hidden" id="rid" value="" />
+                        <div class="form-group">
+                            <label for="tbOPERATION">Operation</label>
+                            <input type="text" id="tbOPERATION" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbAsset_Instance _Name">Asset Instance Name</label>
+                            <input type="text" id="tbAsset_Instance _Name" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbMAXIMO_ASSET_ID">Maximo Asset Id</label>
+                            <input type="text" id="tbMAXIMO_ASSET_ID" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbMAXIMO_ASSET_NUM">Maximo Asset Num</label>
+                            <input type="text" id="tbMAXIMO_ASSET_NUM" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbMAXIMO_SITE_ID">Maximo Site Id</label>
+                            <input type="text" id="tbMAXIMO_SITE_ID" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbserialnum">Serial Num</label>
+                            <input type="text" id="serialnum" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbdescription">Description</label>
+                            <input type="text" id="tbdescription" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbvendor">Vendor</label>
+                            <input type="text" id="tbvendor" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbmanufacturer">Manufacturer</label>
+                            <input type="text" id="tbmanufacturer" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbAsset_Visible_to_Customer">Asset Visible to customer</label>
+                            <input type="text" id="tbAsset_Visible_to_Customer" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbIBX">IBX</label>
+                            <input type="text" id="tbIBX" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbPROTOCOL">Protocol</label>
+                            <input type="text" id="tbPROTOCOL" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbScan_Frequency">Scan Frequency</label>
+                            <input type="text" id="tbScan_Frequency" class="form-control" value="" />
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="btnSave">Save</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var instanceData = [];
+        var mode = 'create';
+		$(document).ready(function(){
+            $('#btnSave').click(function(){   
+                if(mode == 'create'){
+                    createInstance();   
+                }
+                else{
+                    updateInstance();
+                }
+            });
+            
+            bindCreateButton();
+            
+			$.ajax({
+				url: '/assets',
+				type: 'GET',
+				dataType: 'json',
+				success: function(data){
+					instanceData = data;
+					loadInstance(data);
+					bindEditButtons();
+                    bindDeleteButtons();
+                    $('#tblInstance').DataTable();
+				},
+				failure: function(error){
+					alert(JSON.stringify(error));
+				}
+			});
+		});
+		
+		function findInstance(rid){
+			var result;
+			
+			instanceData.forEach(function(template){
+				if(template['@rid'] == rid){	
+					result = template;
+				}
+			});
+			
+			return result;
+		}
+        
+        
+		function bindCreateButton(){
+			$('#btnCreateAsset').click(function(){
+                mode = 'create';
+                $('#editForm').find('#modalTitle').text('Create Asset');
+				$('#editForm').find('#frm').trigger('reset');
+				$('#editForm').modal('show');
+			});
+		}
+		
+		function bindEditButtons(){
+			$('.btn-edit').click(function(){
+                mode = 'edit';
+                //alert(mode);
+                $('#editForm').find('#modalTitle').text('Edit Asset');
+				var instance = findInstance($(this).prop('title'));
+				$('#editForm').find('#rid').val(instance['@rid']);
+				$('#editForm').find('#tbOPERATION').val(instance.OPERATION);
+				$('#editForm').find('#tbASSET_INSTANCE_NAME').val(instance.ASSET_INSTANCE_NAME);
+				$('#editForm').find('#tbMAXIMO_ASSET_ID').val(instance.MAXIMO_ASSET_ID);
+				$('#editForm').find('#tbMAXIMO_ASSET_NUM').val(instance.MAXIMO_ASSET_NUM);
+				$('#editForm').find('#tbMAXIMO_SITE_ID').val(instance.MAXIMO_SITE_ID);
+				$('#editForm').find('#tbserialnum').val(instance.serialnum);
+				$('#editForm').find('#tbvendor').val(instance.vendor);
+				$('#editForm').find('#tbdescription').val(instance.description);
+				$('#editForm').find('#tbmanufacturer').val(instance.manufacturer);
+				$('#editForm').find('#tbAsset_Visible_to_Customer').val(instance.Asset_Visible_to_Customer);
+				$('#editForm').find('#tbIBX').val(instance.IBX);
+				$('#editForm').find('#tbPROTOCOL').val(instance.PROTOCOL);
+				$('#editForm').find('#tbScan_Frequency').val(instance.Scan_Frequency);
+				$('#editForm').modal('show');
+			});
+		}
+		
+        function bindDeleteButtons(){
+            $('.btn-delete').click(function(){
+				var instanceToDelete = findInstance($(this).prop('title'));
+				$.ajax({
+					url: '/deleteAsset',
+					type: 'DELETE',
+					data: instanceToDelete,
+					success: function(result){
+						alert(result);
+						window.location.reload(true);
+					},
+					failure: function(error){
+						alert(error);
+					}
+				});
+			});
+        }
+        
+        function createInstance(){
+            var instanceToAdd = {
+					Operations: $('#editForm').find('#tbOPERATION').val(),
+					ASSET_INSTANCE_NAME: $('#editForm').find('#tbASSET_INSTANCE_NAME').val(),
+					MAXIMO_ASSET_ID: $('#editForm').find('#tbMAXIMO_ASSET_ID').val(),
+					MAXIMO_ASSET_NUM: $('#editForm').find('#tbMAXIMO_ASSET_NUM').val(),
+					MAXIMO_SITE_ID: $('#editForm').find('#tbMAXIMO_SITE_ID').val(),
+					serialnum: $('#editForm').find('#tbserialnum').val(),
+					vendor: $('#editForm').find('#tbvendor').val(),
+					description: $('#editForm').find('#tbdescription').val(),
+					manufacturer: $('#editForm').find('#tbmanufacturer').val(),
+                    Asset_Visible_to_Customer: $('#editForm').find('#tbAsset_Visible_to_Customer').val(),
+					IBX: $('#editForm').find('#tbIBX').val(),
+					PROTOCOL: $('#editForm').find('#tbPROTOCOL').val(),
+					Scan_Frequency: $('#editForm').find('#tbScan_Frequency').val(),
+				};
+				$.ajax({
+					url: '/addAsset',
+					type: 'POST',
+					data: instanceToAdd,
+					success: function(result){
+						alert(result);
+						window.location.reload(true);
+					},
+					failure: function(error){
+						alert(error);
+					}
+				});
+        }
+        
+		function updateInstance(){
+			var rid = $('#editForm').find('#rid').val();
+			if(rid){
+				var instanceToUpdate = {
+					rid: rid,
+					Operations: $('#editForm').find('#tbOPERATION').val(),
+					ASSET_INSTANCE_NAME: $('#editForm').find('#tbASSET_INSTANCE_NAME').val(),
+					MAXIMO_ASSET_ID: $('#editForm').find('#tbMAXIMO_ASSET_ID').val(),
+					MAXIMO_ASSET_NUM: $('#editForm').find('#tbMAXIMO_ASSET_NUM').val(),
+					MAXIMO_SITE_ID: $('#editForm').find('#tbMAXIMO_SITE_ID').val(),
+					serialnum: $('#editForm').find('#tbserialnum').val(),
+					vendor: $('#editForm').find('#tbvendor').val(),
+					description: $('#editForm').find('#tbdescription').val(),
+					manufacturer: $('#editForm').find('#tbmanufacturer').val(),
+                    Asset_Visible_to_Customer: $('#editForm').find('#tbAsset_Visible_to_Customer').val(),
+					IBX: $('#editForm').find('#tbIBX').val(),
+					PROTOCOL: $('#editForm').find('#tbPROTOCOL').val(),
+					Scan_Frequency: $('#editForm').find('#tbScan_Frequency').val(),
+				};
+				$.ajax({
+					url: '/updateAsset',
+					type: 'PUT',
+					data: instanceToUpdate,
+					success: function(result){
+						alert(result);
+						window.location.reload(true);
+					},
+					failure: function(error){
+						alert(error);
+					}
+				});
+			}
+		}
+		
+		function loadInstance(data){
+			var InstanceTableBody = $('#tblInstance tbody');
+			data.forEach(function(template){
+				InstanceTableBody.append(createRow(template));
+			});
+		}
+		
+		function createRow(instance){
+			var row = $('<tr>');
+			row.append($('<td class="hidden">'+instance['@rid']+'</td>'));
+			row.append($('<td>'+instance.Operations+'</td>'));
+			row.append($('<td>'+instance.ASSET_INSTANCE_NAME+'</td>'));
+			row.append($('<td>'+instance.MAXIMO_ASSET_ID+'</td>'));
+			row.append($('<td>'+instance.MAXIMO_ASSET_NUM+'</td>'));
+			row.append($('<td>'+instance.MAXIMO_SITE_ID+'</td>'));
+			row.append($('<td>'+instance.serialnum+'</td>'));
+			row.append($('<td>'+instance.vendor+'</td>'));
+			row.append($('<td>'+instance.description+'</td>'));
+			row.append($('<td>'+instance.manufacturer+'</td>'));
+			row.append($('<td>'+instance.Asset_Visible_to_Customer+'</td>'));
+			row.append($('<td>'+instance.IBX+'</td>'));
+			row.append($('<td>'+instance.PROTOCOL+'</td>'));
+			row.append($('<td>'+instance.Scan_Frequency+'</td>'));
+			row.append($('<td><button type="button" class="btn btn-primary btn-sm btn-edit" title="'+instance['@rid']+'"><span class="glyphicon glyphicon-edit"></span></button></td>'));
+            row.append($('<td><button type="button" class="btn btn-primary btn-sm btn-delete" title="'+instance['@rid']+'"><span class="glyphicon glyphicon-remove"></span></button></td>'))
+			return row;
+		}
+    </script>
+</body>
+
+</html>
