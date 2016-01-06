@@ -1,0 +1,21 @@
+#loader
+{
+	display: inline-block;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 200px;
+    height: 200px;
+    margin: auto;
+	vertical-align: middle;
+	background-image: url(../images/loader.gif);
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.product-thumbnail{
+	width: 200px;
+	height: 350px;
+}

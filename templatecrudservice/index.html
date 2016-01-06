@@ -1,0 +1,300 @@
+<html>
+
+<head>
+    <title>Asset DCIM</title>
+    <script src="js/jquery.js"></script>
+    <script src="js/bootstrap.js"></script>
+    <script src="js/jquery.dataTables.js"></script>
+    <link rel="stylesheet" href="css/bootstrap.css" />
+    <link rel="stylesheet" href="css/dataTables.bootstrap.css" />
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="panel panel-primary">
+                <div class="panel-heading">
+                    <h4>Infra Asset Configurator</h4>
+                </div>
+                <div class="panel-body">
+                    <table class="table table-hover able-condensed" id="tblTemplate">
+                        <thead>
+                            <tr>
+                                <th class="hidden">Row Id</th>
+                                <th>OPERATIONS</th>
+                                <th>Infra Asset Name</th>
+                                <th>Comm Attr 1</th>
+                                <th>Comm Attr 2</th>
+                                <th>Comm Attr 3</th>
+                                <th>Comm Attr 4</th>
+                                <th>Std Attr 1</th>
+                                <th>Std Attr 2</th>
+                                <th>Std Attr 3</th>
+                                <th>Simple View</th>
+                                <th>Advanced View</th>
+                                <th>Edit</th>
+                                <th>Delete</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        </tbody>
+                    </table>
+                    <button class="btn btn-primary" id="btnCreateAsset">
+                        Create Asset
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="editForm" class="modal fade" role="dialog">
+        <div class="modal-dialog">
+            <!-- Modal content-->
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">
+                        <span id="modalTitle"></span>
+                    </h4>
+                    <input type="hidden" id="rid" />
+                </div>
+                <div class="modal-body" style="max-height: 500px; overflow-y:auto;">
+                    <form id="frm">
+                        <input type="hidden" id="rid" value="" />
+                        <div class="form-group">
+                            <label for="tbOPERATIONS">OPERATIONS</label>
+                            <input type="text" id="tbOPERATIONS" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbInfra_Asset_Template_Name">Infra asset name</label>
+                            <input type="text" id="tbInfra_Asset_Template_Name" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbAsset_Classification">common attr1</label>
+                            <input type="text" id="tbAsset_Classification" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbMaximo">common attr2</label>
+                            <input type="text" id="tbMaximo" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbLocation_Vector">common attr3</label>
+                            <input type="text" id="tbLocation_Vector" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbATTRIBUTE_1">common attr3</label>
+                            <input type="text" id="tbATTRIBUTE_1" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbATTRIBUTE_2">standard attr1</label>
+                            <input type="text" id="tbATTRIBUTE_2" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbATTRIBUTE_3">standard attr2</label>
+                            <input type="text" id="tbATTRIBUTE_3" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbATTRIBUTE_4">standard attr3</label>
+                            <input type="text" id="tbATTRIBUTE_4" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbAsset_Image_Simple_Graphical_View">Asset image simple view</label>
+                            <input type="text" id="tbAsset_Image_Simple_Graphical_View" class="form-control" value="" />
+                        </div>
+                        <div class="form-group">
+                            <label for="tbImage_Advanced_graphical_View">Asset image advanced view</label>
+                            <input type="text" id="tbImage_Advanced_graphical_View" class="form-control" value="" />
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="btnSave">Save</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var templateData = [];
+        var mode = 'create';
+		$(document).ready(function(){
+            $('#btnSave').click(function(){   
+                if(mode == 'create'){
+                    createTemplate();   
+                }
+                else{
+                    updateTemplate();
+                }
+            });
+            
+            bindCreateButton();
+            
+			$.ajax({
+				url: '/assets',
+				type: 'GET',
+				dataType: 'json',
+				success: function(data){
+					templateData = data;
+					loadTemplate(data);
+					bindEditButtons();
+                    bindDeleteButtons();
+                    $('#tblTemplate').DataTable();
+				},
+				failure: function(error){
+					alert(JSON.stringify(error));
+				}
+			});
+		});
+		
+		function findTemplate(rid){
+			var result;
+			
+			templateData.forEach(function(template){
+				if(template['@rid'] == rid){	
+					result = template;
+				}
+			});
+			
+			return result;
+		}
+        
+        
+		function bindCreateButton(){
+			$('#btnCreateAsset').click(function(){
+                mode = 'create';
+                $('#editForm').find('#modalTitle').text('Create Asset');
+				$('#editForm').find('#frm').trigger('reset');
+				$('#editForm').modal('show');
+			});
+		}
+		
+		function bindEditButtons(){
+			$('.btn-edit').click(function(){
+                mode = 'edit';
+                //alert(mode);
+                $('#editForm').find('#modalTitle').text('Edit Asset');
+				var template = findTemplate($(this).prop('title'));
+				$('#editForm').find('#rid').val(template['@rid']);
+				$('#editForm').find('#tbOPERATIONS').val(template.OPERATIONS);
+				$('#editForm').find('#tbInfra_Asset_Template_Name').val(template.Infra_Asset_Template_Name);
+				$('#editForm').find('#tbAsset_Classification').val(template.Asset_Classification);
+				$('#editForm').find('#tbMaximo').val(template.Maximo);
+				$('#editForm').find('#tbLocation_Vector').val(template.Location_Vector);
+				$('#editForm').find('#tbATTRIBUTE_1').val(template.ATTRIBUTE_1);
+				$('#editForm').find('#tbATTRIBUTE_2').val(template.ATTRIBUTE_2);
+				$('#editForm').find('#tbATTRIBUTE_3').val(template.ATTRIBUTE_3);
+				$('#editForm').find('#tbATTRIBUTE_4').val(template.ATTRIBUTE_4);
+				$('#editForm').find('#tbAsset_Image_Simple_Graphical_View').val(template.Asset_Image_Simple_Graphical_View);
+				$('#editForm').find('#tbImage_Advanced_graphical_View').val(template.Image_Advanced_graphical_View);
+				$('#editForm').modal('show');
+			});
+		}
+		
+        function bindDeleteButtons(){
+            $('.btn-delete').click(function(){
+				var templateToDelete = findTemplate($(this).prop('title'));
+				$.ajax({
+					url: '/deleteAsset',
+					type: 'DELETE',
+					data: templateToDelete,
+					success: function(result){
+						alert(result);
+						window.location.reload(true);
+					},
+					failure: function(error){
+						alert(error);
+					}
+				});
+			});
+        }
+        
+        function createTemplate(){
+            var templateToAdd = {
+					OPERATIONS: $('#editForm').find('#tbOPERATIONS').val(),
+					Infra_Asset_Template_Name: $('#editForm').find('#tbInfra_Asset_Template_Name').val(),
+					Asset_Classification: $('#editForm').find('#tbAsset_Classification').val(),
+					Maximo: $('#editForm').find('#tbMaximo').val(),
+					Location_Vector: $('#editForm').find('#tbLocation_Vector').val(),
+					ATTRIBUTE_1: $('#editForm').find('#tbATTRIBUTE_1').val(),
+					ATTRIBUTE_2: $('#editForm').find('#tbATTRIBUTE_2').val(),
+					ATTRIBUTE_3: $('#editForm').find('#tbATTRIBUTE_3').val(),
+					ATTRIBUTE_4: $('#editForm').find('#tbATTRIBUTE_4').val(),
+                    Asset_Image_Simple_Graphical_View: $('#editForm').find('#tbAsset_Image_Simple_Graphical_View').val(),
+					Image_Advanced_graphical_View: $('#editForm').find('#tbImage_Advanced_graphical_View').val(),
+				};
+				$.ajax({
+					url: '/addAsset',
+					type: 'POST',
+					data: templateToAdd,
+					success: function(result){
+						alert(result);
+						window.location.reload(true);
+					},
+					failure: function(error){
+						alert(error);
+					}
+				});
+        }
+        
+		function updateTemplate(){
+			var rid = $('#editForm').find('#rid').val();
+			if(rid){
+				var templateToUpdate = {
+					rid: rid,
+					OPERATIONS: $('#editForm').find('#tbOPERATIONS').val(),
+					Infra_Asset_Template_Name: $('#editForm').find('#tbInfra_Asset_Template_Name').val(),
+					Asset_Classification: $('#editForm').find('#tbAsset_Classification').val(),
+					Maximo: $('#editForm').find('#tbMaximo').val(),
+					Location_Vector: $('#editForm').find('#tbLocation_Vector').val(),
+					ATTRIBUTE_1: $('#editForm').find('#tbATTRIBUTE_1').val(),
+					ATTRIBUTE_2: $('#editForm').find('#tbATTRIBUTE_2').val(),
+					ATTRIBUTE_3: $('#editForm').find('#tbATTRIBUTE_3').val(),
+					ATTRIBUTE_4: $('#editForm').find('#tbATTRIBUTE_4').val(),
+                    Asset_Image_Simple_Graphical_View: $('#editForm').find('#tbAsset_Image_Simple_Graphical_View').val(),
+					Image_Advanced_graphical_View: $('#editForm').find('#tbImage_Advanced_graphical_View').val(),
+				};
+				$.ajax({
+					url: '/updateAsset',
+					type: 'PUT',
+					data: templateToUpdate,
+					success: function(result){
+						alert(result);
+						window.location.reload(true);
+					},
+					failure: function(error){
+						alert(error);
+					}
+				});
+			}
+		}
+		
+		function loadTemplate(data){
+			var TemplateTableBody = $('#tblTemplate tbody');
+			data.forEach(function(template){
+				TemplateTableBody.append(createRow(template));
+			});
+		}
+		
+		function createRow(template){
+			var row = $('<tr>');
+			row.append($('<td class="hidden">'+template['@rid']+'</td>'));
+			row.append($('<td>'+template.OPERATIONS+'</td>'));
+			row.append($('<td>'+template.Infra_Asset_Template_Name+'</td>'));
+			row.append($('<td>'+template.Asset_Classification+'</td>'));
+			row.append($('<td>'+template.Maximo+'</td>'));
+			row.append($('<td>'+template.Location_Vector+'</td>'));
+			row.append($('<td>'+template.ATTRIBUTE_1+'</td>'));
+			row.append($('<td>'+template.ATTRIBUTE_2+'</td>'));
+			row.append($('<td>'+template.ATTRIBUTE_3+'</td>'));
+			row.append($('<td>'+template.ATTRIBUTE_4+'</td>'));
+			row.append($('<td>'+template.Asset_Image_Simple_Graphical_View+'</td>'));
+			row.append($('<td>'+template.Image_Advanced_graphical_View+'</td>'));
+			row.append($('<td><button type="button" class="btn btn-primary btn-sm btn-edit" title="'+template['@rid']+'"><span class="glyphicon glyphicon-edit"></span></button></td>'));
+            row.append($('<td><button type="button" class="btn btn-primary btn-sm btn-delete" title="'+template['@rid']+'"><span class="glyphicon glyphicon-remove"></span></button></td>'))
+			return row;
+		}
+    </script>
+</body>
+
+</html>
